@@ -1,12 +1,14 @@
-import 'package:eye_prescription/db/db_helper.dart';
-import 'package:eye_prescription/screens/prescription.dart';
+import 'package:eye_prescription/provider/db_provider.dart';
+import 'package:eye_prescription/screens/final_summary.dart';
 import 'package:eye_prescription/utils/constants/colors.dart';
 import 'package:eye_prescription/utils/constants/sizes.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
 class LenseInfo extends StatefulWidget {
+  const LenseInfo({super.key});
+
   @override
   State<LenseInfo> createState() => _LenseInfoState();
 }
@@ -24,8 +26,23 @@ class _LenseInfoState extends State<LenseInfo> {
   final TextEditingController note = TextEditingController();
 
   bool intermediateAdd = false;
-  String prism =  "No";
+  String prism = "No";
   String pd = "No";
+
+  @override
+  void dispose() {
+    // Always dispose controllers
+    rightSphere.dispose();
+    leftSphere.dispose();
+    rightNearAdd.dispose();
+    leftNearAdd.dispose();
+    rightCylinder.dispose();
+    leftCylinder.dispose();
+    rightAxis.dispose();
+    leftAxis.dispose();
+    note.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,12 +70,12 @@ class _LenseInfoState extends State<LenseInfo> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             buildSectionTitle("Sphere"),
-            SizedBox(height: Sizes.spaceBtwItems),
+            const SizedBox(height: Sizes.spaceBtwItems),
             buildDualInputRow("Right", rightSphere, "Left", leftSphere),
             const SizedBox(height: Sizes.spaceBtwInputFields),
 
             buildSectionTitle("Near Add"),
-            SizedBox(height: Sizes.spaceBtwItems),
+            const SizedBox(height: Sizes.spaceBtwItems),
             buildDualInputRow("Right", rightNearAdd, "Left", leftNearAdd),
             const SizedBox(height: Sizes.spaceBtwInputFields),
 
@@ -78,23 +95,26 @@ class _LenseInfoState extends State<LenseInfo> {
             const Divider(height: 30),
 
             buildSectionTitle("Cylinder"),
-            SizedBox(height: Sizes.spaceBtwItems),
-
+            const SizedBox(height: Sizes.spaceBtwItems),
             buildDualInputRow("Right", rightCylinder, "Left", leftCylinder),
             const SizedBox(height: Sizes.spaceBtwInputFields),
+
             buildSectionTitle("Axis"),
-            SizedBox(height: Sizes.spaceBtwItems),
+            const SizedBox(height: Sizes.spaceBtwItems),
             buildDualInputRow("Right", rightAxis, "Left", leftAxis),
 
             const Divider(height: 30),
 
-            buildRadioGroup("Prism", (val) {
-              setState(() => prism = val);
-            }, prism),
-
-            buildRadioGroup("Pupillary Distance (PD)", (val) {
-              setState(() => pd = val);
-            }, pd),
+            buildRadioGroup(
+              "Prism",
+              (val) => setState(() => prism = val),
+              prism,
+            ),
+            buildRadioGroup(
+              "Pupillary Distance (PD)",
+              (val) => setState(() => pd = val),
+              pd,
+            ),
 
             const Divider(height: 30),
 
@@ -127,72 +147,56 @@ class _LenseInfoState extends State<LenseInfo> {
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-
           onPressed: () async {
-            DBHelper dbHelper = DBHelper.getInstance;
+            final dbProvider = Provider.of<DbProvider>(context, listen: false);
 
-            String rightSphere = this.rightSphere.text;
-            String leftSphere =
-                this.leftSphere.text; // <- also mistake here (see next)
-            String rightCylinder = this.rightCylinder.text;
-            String leftCylinder = this.leftCylinder.text;
-            String rightAxis = this.rightAxis.text;
-            String leftAxis = this.leftAxis.text;
+            int prescriptionId = dbProvider.lastInsertedPrescriptionId as int;
 
-            // Validation
-            if (rightSphere.isEmpty ||
-                leftSphere.isEmpty ||
-                rightCylinder.isEmpty ||
-                leftCylinder.isEmpty ||
-                rightAxis.isEmpty ||
-                leftAxis.isEmpty) {
+            debugPrint(" this is your current id${prescriptionId}");
+            if (rightSphere.text.isEmpty || leftSphere.text.isEmpty) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text("Please fill all required fields."),
-                  backgroundColor: Colors.redAccent,
                 ),
               );
               return;
             }
 
-            bool check = await dbHelper.addLensInfo(
-              rightSphere: rightSphere,
-              leftSphere: leftSphere,
-              rightNearAdd: this.rightNearAdd.text,
-              leftNearAdd: this.leftNearAdd.text,
+            int check = await dbProvider.addLensInfo(
+              prescriptionId: prescriptionId,
+              rightSphere: rightSphere.text,
+              leftSphere: leftSphere.text,
+              rightNearAdd: rightNearAdd.text,
+              leftNearAdd: leftNearAdd.text,
               intermediateAdd: intermediateAdd ? "Yes" : "No",
-              rightCylinder: rightCylinder,
-              leftCylinder: leftCylinder,
-              rightAxis: rightAxis,
-              leftAxis: leftAxis,
+              rightCylinder: rightCylinder.text,
+              leftCylinder: leftCylinder.text,
+              rightAxis: rightAxis.text,
+              leftAxis: leftAxis.text,
               prism: prism,
               pupillaryDistance: pd,
               note: note.text,
             );
 
-            if (check) {
+            if (check > 0) {
+              // ignore: use_build_context_synchronously
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text("Prescription Saved Successfully ✅"),
-                  backgroundColor: Colors.green,
                 ),
               );
               Navigator.push(
+                // ignore: use_build_context_synchronously
                 context,
-                MaterialPageRoute(
-                  builder: (context) => PrescriptionScreen(),
-                ), // <- Navigate next
+                MaterialPageRoute(builder: (context) => FinalSummary()),
               );
             } else {
+              // ignore: use_build_context_synchronously
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("Failed to Save Prescription ❌"),
-                  backgroundColor: Colors.redAccent,
-                ),
+                const SnackBar(content: Text("Failed to Save Prescription ❌")),
               );
             }
           },
-
           child: Text(
             'Save & Next',
             style: GoogleFonts.inter(
@@ -205,6 +209,7 @@ class _LenseInfoState extends State<LenseInfo> {
     );
   }
 
+  // 🔹 Widgets
   Widget buildSectionTitle(String title) => Text(
     title,
     style: GoogleFonts.inter(
@@ -233,8 +238,10 @@ class _LenseInfoState extends State<LenseInfo> {
       keyboardType: TextInputType.number,
       controller: controller,
       decoration: InputDecoration(
-        contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 12,
+          horizontal: 16,
+        ),
         labelText: label,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
       ),

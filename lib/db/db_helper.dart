@@ -90,18 +90,18 @@ class DBHelper {
     );
   }
 
-  void Search( String SearchText)async {
-    print("Searching for $SearchText");
-    final db = await getDB();
-    List<Map<String, dynamic>> results = await db.query(
-      TABLE_PRESCRIPTION,
-      where: '$COLUMN_PRES_NAME LIKE ?',
-      whereArgs: ['%$SearchText%'],
-    );
-  }
+  // void Search( String SearchText)async {
+  //   print("Searching for $SearchText");
+  //   final db = await getDB();
+  //   List<Map<String, dynamic>> results = await db.query(
+  //     TABLE_PRESCRIPTION,
+  //     where: '$COLUMN_PRES_NAME LIKE ?',
+  //     whereArgs: ['%$SearchText%'],
+  //   );
+  // }
 
   // Insert Prescription
-Future<bool> addPrescription({
+Future<int> addPrescription({
   required String prescriptionName,
   required String prescriptionDate,
   required String reminderDate,
@@ -109,50 +109,55 @@ Future<bool> addPrescription({
   required String lensType,
 }) async {
   final db = await getDB();
-    int result =  await db.insert(TABLE_PRESCRIPTION, {
+  int id = await db.insert(TABLE_PRESCRIPTION, {
     COLUMN_PRES_NAME: prescriptionName,
     COLUMN_PRES_DATE: prescriptionDate,
     COLUMN_REMINDER_DATE: reminderDate,
     COLUMN_DOCTOR_NAME: doctorName,
     COLUMN_LENS_TYPE: lensType,
-  }
-  );
-  return result > 0 ;
+  });
+  
+  return id; // 👈 return the new record ID
 }
 
 
   // Insert Lens Info
-  Future<bool> addLensInfo({
-    required String rightSphere,
-    required String leftSphere,
-    required String rightNearAdd,
-    required String leftNearAdd,
-    required String intermediateAdd,
-    required String rightCylinder,
-    required String leftCylinder,
-    required String rightAxis,
-    required String leftAxis,
-    required String prism,
-    required String pupillaryDistance,
-    required String note,
-  }) async {
-    final db = await getDB();
-    int result = await db.insert(TABLE_LENS_INFO, {
-      COLUMN_RIGHT_SPHERE: rightSphere,
-      COLUMN_LEFT_SPHERE: leftSphere,
-      COLUMN_RIGHT_NEAR_ADD: rightNearAdd,
-      COLUMN_LEFT_NEAR_ADD: leftNearAdd,
-      COLUMN_INTERMEDIATE_ADD: intermediateAdd,
-      COLUMN_RIGHT_CYLINDER: rightCylinder,
-      COLUMN_LEFT_CYLINDER: leftCylinder,
-      COLUMN_RIGHT_AXIS: rightAxis,
-      COLUMN_LEFT_AXIS: leftAxis,
-      COLUMN_PRISM: prism,
-      COLUMN_PD: pupillaryDistance,
-      COLUMN_NOTE: note,
-    });
-    return result > 0;
-  }
+// Insert Lens Info
+Future<int> addLensInfo({
+  required int prescriptionId,
+  required String rightSphere,
+  required String leftSphere,
+  required String rightNearAdd,
+  required String leftNearAdd,
+  required String intermediateAdd,
+  required String rightCylinder,
+  required String leftCylinder,
+  required String rightAxis,
+  required String leftAxis,
+  required String prism,
+  required String pupillaryDistance,
+  required String note,
+}) async {
+  final db = await getDB();
+  int id = await db.insert(TABLE_LENS_INFO, {
+    COLUMN_PRES_ID: prescriptionId,
+    COLUMN_RIGHT_SPHERE: rightSphere,
+    COLUMN_LEFT_SPHERE: leftSphere,
+    COLUMN_RIGHT_NEAR_ADD: rightNearAdd,
+    COLUMN_LEFT_NEAR_ADD: leftNearAdd,
+    COLUMN_INTERMEDIATE_ADD: intermediateAdd,
+    COLUMN_RIGHT_CYLINDER: rightCylinder,
+    COLUMN_LEFT_CYLINDER: leftCylinder,
+    COLUMN_RIGHT_AXIS: rightAxis,
+    COLUMN_LEFT_AXIS: leftAxis,
+    COLUMN_PRISM: prism,
+    COLUMN_PD: pupillaryDistance,
+    COLUMN_NOTE: note,
+  });
+
+  return id; // 👈 Return the inserted row ID
+}
+
 
   // Get all prescriptions
   Future<List<Map<String, dynamic>>> getAllPrescriptions() async {
@@ -186,4 +191,38 @@ Future<bool> addPrescription({
     final db = await getDB();
     await db.close();
   }
+
+
+  Future<Map<String, dynamic>?> getSinglePrescriptionData(int prescriptionId) async {
+  final db = await getDB();
+  final result = await db.rawQuery('''
+    SELECT 
+      p.$COLUMN_PRES_SNO AS id,
+      p.$COLUMN_PRES_NAME AS name,
+      p.$COLUMN_PRES_DATE AS date,
+      p.$COLUMN_DOCTOR_NAME AS doctor,
+      p.$COLUMN_LENS_TYPE AS lensType,
+      l.$COLUMN_RIGHT_SPHERE AS rightSphere,
+      l.$COLUMN_LEFT_SPHERE AS leftSphere,
+      l.$COLUMN_RIGHT_CYLINDER AS rightCylinder,
+      l.$COLUMN_LEFT_CYLINDER AS leftCylinder,
+      l.$COLUMN_RIGHT_AXIS AS rightAxis,
+      l.$COLUMN_LEFT_AXIS AS leftAxis,
+      l.$COLUMN_PRISM AS prism,
+      l.$COLUMN_PD AS pupillaryDistance,
+      l.$COLUMN_NOTE AS note
+    FROM $TABLE_PRESCRIPTION p
+    INNER JOIN $TABLE_LENS_INFO l 
+    ON p.$COLUMN_PRES_SNO = l.$COLUMN_PRES_ID
+    WHERE p.$COLUMN_PRES_SNO = ?
+  ''', [prescriptionId]);
+
+  // Return first row if found, else null
+  if (result.isNotEmpty) {
+    return result.first;
+  } else {
+    return null;
+  }
+}
+
 }

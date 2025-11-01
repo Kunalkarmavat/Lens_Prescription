@@ -76,7 +76,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding: EdgeInsets.all(Sizes.gridViewSpacing),
                       child: TextField(
                         decoration: InputDecoration(
-                          border: OutlineInputBorder(),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(Sizes.borderRadiusMd))
+                            
+                          ),
                           hintText: 'Search prescriptions...',
                           suffixIcon: Icon(Icons.filter_list),
                           prefixIcon: Icon(Icons.search),
@@ -96,19 +99,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                   decoration: BoxDecoration(
                                     color: Colors.white,
                                     boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black,
-                                        spreadRadius: 1,
-                                        offset: const Offset(
-                                          1,
-                                          2,
-                                        ), // changes position of shadow
-                                      ),
+                                      // BoxShadow(
+                                      //   color: TColors.borderDark,
+                                      //   spreadRadius: 1,
+                                      //   offset: const Offset(
+                                      //     1,
+                                      //     2,
+                                      //   ), // changes position of shadow
+                                      // ),
                                     ],
-                                    borderRadius: BorderRadius.circular(2),
+                                    borderRadius: BorderRadius.circular(Sizes.borderRadiusMd),
                                     border: Border.all(
-                                      color: TColors.black,
-                                      width: 2,
+                                      color: TColors.borderSecondary,
+                                      width: 1,
                                     ),
                                   ),
                                   margin: const EdgeInsets.symmetric(
@@ -118,17 +121,33 @@ class _HomeScreenState extends State<HomeScreen> {
                                   child: ListTile(
                                     title: Text(
                                       pres['prescription_name'] ?? '',
+
+                                      
+                                        style: GoogleFonts.inter(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: Sizes.fontSizeMd
+                                        ),
                                     ),
                                     subtitle: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text('${pres['lens_type']}'),
+                                        Text('${pres['lens_type']}',
+                                        style: GoogleFonts.inter(
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: Sizes.fontSizeSm
+                                        ),
+                                        
+                                        
+                                        ),
                                         Text(
                                           pres['prescription_date'] ?? '',
-                                          style: const TextStyle(
-                                            color: Colors.grey,
-                                          ),
+                                          
+                                      style: GoogleFonts.inter(
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: Sizes.fontSizeSm
+                                        ),
+                                        
                                         ),
                                       ],
                                     ),
@@ -156,189 +175,3 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-
-
-// class RecentPrescriptionScreen extends StatelessWidget {
-//   const RecentPrescriptionScreen(this.prescriptions, {super.key});
-
-//   final List<Prescription> prescriptions;
-
-//   @override
-//   Widget build(BuildContext context) {
-//     Widget bodyContent = const Text(
-//       'List of recent prescriptions will be shown here.',
-//       style: TextStyle(fontSize: 16),
-//     );
-
-//     if (prescriptions.isNotEmpty) {
-//       bodyContent = ListView.builder(
-//         itemCount: prescriptions.length,
-//         itemBuilder: (context, index) => Row(
-//           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//           children: [
-//             GestureDetector(
-//               child: Container(
-//                 // height: 200,
-//                 // width: double.infinity,
-//                 color: Colors.amber,
-//                 child: Column(
-//                   children: [
-//                     Text(prescriptions[index].patientName!),
-//                     Text(prescriptions[index].lensType!.name),
-//                     Text(prescriptions[index].date!)
-//                   ],
-//                 ),
-//               ),
-//               onTap: () {
-//                 Navigator.pushNamed(context, '/detail');
-//               },
-//             )
-//           ],
-//         ),
-//       );
-//     }
-
-//     // else{
-//     //   Center(
-//     //     Text("No data found");
-//     //   )
-//     // }
-
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: const Text('Recent Prescriptions'),
-//       ),
-//       body: Center(
-//         child: bodyContent,
-//       ),
-//     );
-//   }
-// }
-
-
-// class HomeScreen extends StatefulWidget {
-//   const HomeScreen({super.key});
-
-//   @override
-//   State<HomeScreen> createState() => _HomeScreenState();
-// }
-
-// class _HomeScreenState extends State<HomeScreen> {
-
-//   final TextEditingController _titleController = TextEditingController();
-//   final TextEditingController _noteController = TextEditingController();
-
-//   String error_msg = 'Title and Description cannot be empty';
-
-//   @override
-//   void initState() {
-//     super.initState();
-
-//     context.read<DbProvider>().getAllNotes();
-
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: const Text('Notes App'),
-//         actions: [
-          
-//         PopupMenuButton(itemBuilder: (BuildContext context) {
-//           return [
-//             PopupMenuItem(
-//               value: 'settings',
-//               child: Row(
-//                 children: [
-//                   Icon(Icons.settings),
-//                   SizedBox(width: 10,),
-//                   Text('Setting')
-//                 ],
-//               ),
-//             ),
-//           ];
-//           },
-//          )
-//         ],
-//       ),
-//       body: Consumer<DbProvider>(
-//         builder: (ctx, dbProvider, child) {
-//           List<Map<String, dynamic>> allNotes = dbProvider.mData;
-
-//           allNotes = dbProvider.mData;
-//           return allNotes.isEmpty
-//               ? const Center(child: Column(
-//                 children: [
-//                   // images.asset('.././', height: 150,),
-//                   Text('No data available'),
-//                 ],
-//               ))
-//               : ListView.builder(
-//                   itemCount: allNotes.length,
-//                   itemBuilder: (context, index) {
-//                     return ListTile(
-//                       leading: Text(
-//                         'Kunal'
-
-//                       ),
-//                       title: Text(allNotes[index][DBHelpe,
-//                       subtitle: Text(
-//                         allNotes[index][DBHelper.COLUMN_NOTE_DESC],
-//                       ),
-//                       trailing: Row(
-//                         mainAxisSize: MainAxisSize.min,
-//                         children: [
-//                           IconButton(
-//                             icon: const Icon(Icons.edit),
-//                             onPressed: () {
-//                               Navigator.push(
-//                                 context,
-//                                 MaterialPageRoute(
-//                                   builder: (context) => AddNotePage( 
-//                                     update: true,
-//                                     title: allNotes[index]
-//                                         [DBHelper.COLUMN_NOTE_TITLE],
-//                                     desc: allNotes[index]
-//                                         [DBHelper.COLUMN_NOTE_DESC],
-//                                     sno: allNotes[index]
-//                                         [DBHelper.COLUMN_NOTE_SNO],
-//                                   ),
-//                                 ),
-//                               );
-
-                            
-
-//                             },
-//                           ),
-//                           IconButton(
-//                             icon: const Icon(Icons.delete),
-//                             onPressed: () async {
-//                               dbProvider.deleteNote(
-//                                 allNotes[index][DBHelper.COLUMN_NOTE_SNO],
-//                               );
-//                             },
-//                           ),
-//                         ],
-//                       ),
-//                     );
-//                   },
-//                 );
-//         },
-//       ),
-//       floatingActionButton: FloatingActionButton(
-//         backgroundColor: Colors.blue,
-//         onPressed: () async {
-//           Navigator.push(
-//             context,
-//             MaterialPageRoute(builder: (context) => AddNotePage()),
-//           );
-//         },
-//         child: const Icon(Icons.add),
-//       ),
-//     );
-//   }
-
-// }
-
-

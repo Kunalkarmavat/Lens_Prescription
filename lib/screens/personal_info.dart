@@ -12,8 +12,6 @@ class PersonalInfo extends StatelessWidget {
   PersonalInfo({super.key});
 
   final String currentDate = DateFormat('dd MMM yyyy').format(DateTime.now());
-  final dbHelper = DBHelper.getInstance;
-
 
   @override
   Widget build(BuildContext context) {
@@ -226,6 +224,8 @@ class PersonalInfo extends StatelessWidget {
           ),
         ),
         onPressed: () async {
+          DbProvider provider = context.read<DbProvider>();
+
           if (name.text.isEmpty || doctor.text.isEmpty || lens.value == null) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -236,17 +236,15 @@ class PersonalInfo extends StatelessWidget {
             return;
           }
 
-
-          // Save Data to DB and get inserted prescription ID
-          bool check = await dbHelper.addPrescription(
-            prescriptionName: name.text,
-            prescriptionDate: presDate.text,
-            reminderDate: reminder.text,
-            doctorName: doctor.text,
-            lensType: lens.value ?? '',
+          int id = await provider.addOnPrescription(
+            name.text,
+            doctor.text,
+            reminder.text,
+            presDate.text,
+            lens.value ?? ""
           );
-
-          if (check) {
+          debugPrint("this is your id ${provider.lastInsertedPrescriptionId}");
+          if (id > 0) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text("Prescription Saved Successfully ✅"),
@@ -254,7 +252,7 @@ class PersonalInfo extends StatelessWidget {
               ),
             );
 
-            // Navigate to LenseInfo screen with prescriptionId
+            // ✅ Pass the generated prescription ID to the LenseInfo screen
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -269,7 +267,6 @@ class PersonalInfo extends StatelessWidget {
               ),
             );
           }
-
         },
 
         child: Text(
