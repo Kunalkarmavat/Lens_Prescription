@@ -1,3 +1,4 @@
+import 'package:eye_prescription/utils/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:eye_prescription/db/db_helper.dart';
@@ -5,12 +6,10 @@ import 'package:eye_prescription/provider/db_provider.dart';
 import 'package:eye_prescription/screens/home_screen.dart';
 
 Future<void> main() async {
-
-
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => DbProvider(dbHelper: DBHelper.getInstance)),
+        ChangeNotifierProvider(create: (_) => DbProvider(dbHelper: DBHelper.instance)),
       ],
       child: const MyApp(),
     ),
@@ -22,9 +21,12 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
+      themeMode: ThemeMode.system,
+      theme: OkAppTheme.lightTheme,
+      darkTheme: OkAppTheme.darkTheme,
       debugShowCheckedModeBanner: false,
-      home: HomeScreen(),
+      home: const HomeScreen(),
     );
   }
 }

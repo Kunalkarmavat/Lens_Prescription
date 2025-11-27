@@ -13,216 +13,270 @@ class FinalSummary extends StatefulWidget {
 
 class _FinalSummaryState extends State<FinalSummary> {
   Map<String, dynamic>? prescriptionData;
-  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadPrescriptionData();
+    loadPrescription();
   }
 
-  Future<void> _loadPrescriptionData() async {
-    final provider = Provider.of<DbProvider>(context, listen: false);
-    final data = await provider.getSinglePrescriptionData();
-
+  // 🔹 Fetch Data from DB
+  void loadPrescription() async {
+    final data = await context.read<DbProvider>().getFullPrescription();
     setState(() {
       prescriptionData = data;
-      isLoading = false;
     });
   }
+
+  // 🔹 Safe string converter
+  String safeString(dynamic value) =>
+      (value == null || value.toString().trim().isEmpty)
+          ? "-"
+          : value.toString();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        elevation: 0,
         backgroundColor: const Color(0xFF5146F0),
+        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          "Prescription Details",
+          "Prescription Summary",
           style: GoogleFonts.inter(
-            fontSize: 20,
             color: Colors.white,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
+            fontSize: 19,
           ),
         ),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 16),
-            child: Row(
-              children: [
-                Icon(Icons.edit_document, color: Colors.white),
-                SizedBox(width: 12),
-                Icon(Icons.share, color: Colors.white),
-              ],
+      ),
+      body: prescriptionData == null
+          ? const Center(child: CircularProgressIndicator())
+          : buildSummaryUI(),
+    );
+  }
+
+  // 🔹 MAIN UI
+  Widget buildSummaryUI() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          
+          //* PERSONAL INFORMATION
+
+          sectionTitle("Personal Information"),
+          infoRow("Patient Name", safeString(prescriptionData!['patient_name'])),
+          infoRow("Age", safeString(prescriptionData!['age'])),
+          infoRow("Doctor Name", safeString(prescriptionData!['doctor_name'])),
+          infoRow("Exam Date", safeString(prescriptionData!['exam_date'])),
+          infoRow("Reminder Date", safeString(prescriptionData!['reminder_date'])),
+          infoRow("Lens Type", safeString(prescriptionData!['lens_type'])),
+          const SizedBox(height: 20),
+
+          // ============================================================
+          //* SPHERE
+          sectionTitle("Sphere (SPH)"),
+          buildTable(
+            headerTitles: ["Eye", "Value"],
+            rows: [
+              {"dir": "Right", "val": safeString(prescriptionData!['right_sphere'])},
+              {"dir": "Left", "val": safeString(prescriptionData!['left_sphere'])},
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          //* CYL & AXIS
+          sectionTitle("Cylinder (CYL) & Axis"),
+          buildTable(
+            headerTitles: ["Eye", "CYL", "Axis"],
+            rows: [
+              {
+                "dir": "Right",
+                "cyl": safeString(prescriptionData!['right_cylinder']),
+                "axis": safeString(prescriptionData!['right_axis']),
+              },
+              {
+                "dir": "Left",
+                "cyl": safeString(prescriptionData!['left_cylinder']),
+                "axis": safeString(prescriptionData!['left_axis']),
+              }
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          //* NEAR ADD
+
+          sectionTitle("Near Add"),
+          buildTable(
+            headerTitles: ["Eye", "Add"],
+            rows: [
+              {"dir": "Right", "add": safeString(prescriptionData!['right_near_add'])},
+              {"dir": "Left", "add": safeString(prescriptionData!['left_near_add'])},
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          //* PRISM DETAILS
+
+          sectionTitle("Prism Details"),
+          infoRow("Prism Enabled", prescriptionData!['prism'] == 1 ? "Yes" : "No"),
+          infoRow("Right Horizontal Prism",
+              safeString(prescriptionData!['right_horizontal_prism'])),
+          infoRow("Left Horizontal Prism",
+              safeString(prescriptionData!['left_horizontal_prism'])),
+          infoRow("Right Vertical Prism",
+              safeString(prescriptionData!['right_vertical_prism'])),
+          infoRow("Left Vertical Prism",
+              safeString(prescriptionData!['left_vertical_prism'])),
+          const SizedBox(height: 20),
+
+          sectionTitle("Pupillary Distance (PD)"),
+          infoRow("Single PD", safeString(prescriptionData!['single_pd'])),
+          infoRow("Right Distance PD",
+              safeString(prescriptionData!['right_distance_pd'])),
+          infoRow("Left Distance PD",
+              safeString(prescriptionData!['left_distance_pd'])),
+          const SizedBox(height: 20),
+
+          sectionTitle("Intermediate Add"),
+          infoRow("Intermediate Add",
+              prescriptionData!['intermediate_add'] == 1 ? "Yes" : "No"),
+          const SizedBox(height: 20),
+
+  
+          sectionTitle("Notes"),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              safeString(prescriptionData!['note']),
+              style: GoogleFonts.inter(fontSize: 14),
             ),
           ),
+
+          const SizedBox(height: 40),
+          backButton(),
         ],
       ),
-
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : prescriptionData == null
-              ? const Center(child: Text("No Data Found"))
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 24),
-
-                      infoRow("Prescription Name", prescriptionData!['name'] ?? "N/A"),
-                      const SizedBox(height: 12),
-                      infoRow("Prescription Date", prescriptionData!['date'] ?? "N/A"),
-                      const SizedBox(height: 12),
-                      infoRow("Doctor’s Name", prescriptionData!['doctor'] ?? "N/A"),
-                      const SizedBox(height: 12),
-                      infoRow("Lens Type", prescriptionData!['lensType'] ?? "N/A"),
-                      const SizedBox(height: 20),
-
-                      Container(height: 1, color: Colors.grey.shade300),
-                      const SizedBox(height: 16),
-
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          tableHeader("Direction"),
-                          tableHeader("Sphere"),
-                          tableHeader("Cylinder"),
-                          tableHeader("Axis"),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-
-                      Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.black54, width: 0.8),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Column(
-                          children: [
-                            tableRow(
-                              "Right",
-                              prescriptionData!['rightSphere'] ?? "0.00",
-                              prescriptionData!['rightCylinder'] ?? "0.00",
-                              prescriptionData!['rightAxis'] ?? "0.00",
-                            ),
-                            Container(height: 0.8, color: Colors.black54),
-                            tableRow(
-                              "Left",
-                              prescriptionData!['leftSphere'] ?? "0.00",
-                              prescriptionData!['leftCylinder'] ?? "0.00",
-                              prescriptionData!['leftAxis'] ?? "0.00",
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      Container(
-                        color: Colors.grey.shade300,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text("Note", style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
-                            Text(
-                              prescriptionData!['note'] ?? "+ Add",
-                              style: GoogleFonts.inter(
-                                color: Colors.black,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 40),
-
-                      SizedBox(
-                        width: double.infinity,
-                        height: 55,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF5146F0),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const HomeScreen()),
-                          ),
-                          child: Text(
-                            "Go Back To Home",
-                            style: GoogleFonts.inter(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
     );
   }
 
-  // 🔹 Info Row
-  Widget infoRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600)),
-        const SizedBox(width: 10),
-        Text(value, style: GoogleFonts.inter(fontSize: 14)),
-      ],
-    );
-  }
-
-  // 🔹 Table Header
-  Widget tableHeader(String text) {
-    return Expanded(
-      child: Center(
-        child: Text(
-          text,
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13),
+  Widget sectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Text(
+        title,
+        style: GoogleFonts.inter(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
   }
 
-  // 🔹 Table Row
-  Widget tableRow(String direction, String sphere, String cyl, String axis) {
-    return Row(
+  Widget infoRow(String title, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(title,
+              style:
+                  GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600)),
+          Text(value, style: GoogleFonts.inter(fontSize: 14)),
+        ],
+      ),
+    );
+  }
+
+  Widget buildTable({
+    required List<String> headerTitles,
+    required List<Map<String, String?>> rows,
+  }) {
+    return Column(
       children: [
-        tableCell(direction, isBold: true),
-        tableCell(sphere),
-        tableCell(cyl),
-        tableCell(axis),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: headerTitles
+              .map((h) => Expanded(
+                    child: Center(
+                      child: Text(
+                        h,
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ))
+              .toList(),
+        ),
+        const SizedBox(height: 8),
+
+        // Table rows
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.black45),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Column(
+            children: rows.map((map) {
+              return Row(
+                children: map.values.map((v) {
+                  return Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      alignment: Alignment.center,
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          right: BorderSide(color: Colors.black26),
+                        ),
+                      ),
+                      child: Text(
+                        safeString(v),
+                        style: GoogleFonts.inter(fontSize: 14),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              );
+            }).toList(),
+          ),
+        )
       ],
     );
   }
 
-  // 🔹 Table Cell
-  Widget tableCell(String text, {bool isBold = false}) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        alignment: Alignment.center,
-        decoration: const BoxDecoration(
-          border: Border(
-            right: BorderSide(color: Colors.black54, width: 0.8),
+  Widget backButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 55,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF5146F0),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
+        onPressed: () => Navigator.push(
+            context, MaterialPageRoute(builder: (_) => const HomeScreen())),
         child: Text(
-          text,
-          style: GoogleFonts.inter(fontWeight: isBold ? FontWeight.w500 : FontWeight.w400),
+          "Go Back",
+          style: GoogleFonts.inter(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );

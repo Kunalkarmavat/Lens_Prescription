@@ -1,56 +1,77 @@
-import 'package:eye_prescription/db/db_helper.dart';
+import 'package:eye_prescription/models/personal_info_model.dart';
 import 'package:eye_prescription/provider/db_provider.dart';
-import 'package:eye_prescription/screens/lense_info.dart';
+import 'package:eye_prescription/screens/vision_details.dart';
 import 'package:eye_prescription/utils/constants/colors.dart';
 import 'package:eye_prescription/utils/constants/sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:step_progress_indicator/step_progress_indicator.dart';
+import 'package:top_snackbar_flutter/top_snack_bar.dart';
+import 'package:top_snackbar_flutter/custom_snack_bar.dart';
 
-class PersonalInfo extends StatelessWidget {
-  PersonalInfo({super.key});
+class PersonalInfoScreen extends StatefulWidget {
+  const PersonalInfoScreen({super.key});
 
+  @override
+  
+  State<PersonalInfoScreen> createState() => _PersonalInfoScreenState();
+}
+
+class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   final String currentDate = DateFormat('dd MMM yyyy').format(DateTime.now());
+
+  final TextEditingController name = TextEditingController();
+  final TextEditingController age = TextEditingController();
+  final TextEditingController doctor = TextEditingController();
+  final TextEditingController examDate = TextEditingController();
+  final TextEditingController reminderDate = TextEditingController();
+
+  String? selectedLens;
+
+  final List<String> lensTypes = [
+    'Distance',
+    'Reading',
+    'Computer',
+    'Trifocal',
+    'Bifocal',
+    'Progressive',
+  ];
+
+  @override
+    void dispose() {
+    name.dispose();
+    age.dispose();
+    doctor.dispose();
+    examDate.dispose();
+    reminderDate.dispose();
+    super.dispose();
+  }
+
+  void initState() {
+    super.initState();
+    examDate.text = currentDate;
+    reminderDate.text = currentDate;
+  }
 
   @override
   Widget build(BuildContext context) {
-    TextEditingController _name = TextEditingController();
-    TextEditingController _doctor = TextEditingController();
-    TextEditingController _currentDate = TextEditingController(
-      text: currentDate,
-    );
-    TextEditingController _reminder = TextEditingController(text: currentDate);
-
-    // Selected lens type
-    ValueNotifier<String?> selectedLens = ValueNotifier<String?>(null);
-
-    final List<String> lensTypes = [
-      'Distance',
-      'Reading',
-      'Computer',
-      'Trifocal',
-      'Bifocal',
-      'Progressive',
-    ];
-
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: Sizes.appBarHeight,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: TColors.buttonSecondary),
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
-          'Prescription Info',
+          'Personal Information',
           style: GoogleFonts.inter(
-            fontSize: Sizes.fontSizeLg,
-            fontWeight: FontWeight.w400,
-            color: TColors.textDarkPrimary,
+            fontSize: Sizes.fontSizeMd,
+            fontWeight: FontWeight.w600,
+            color: TColors.black,
           ),
         ),
-        backgroundColor: TColors.primary,
       ),
 
       body: Padding(
@@ -60,77 +81,71 @@ class PersonalInfo extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: Sizes.defaultSpace),
-
-              // Prescription Name
-              presInput(context, _name, "Prescription Name", "Prescription 1"),
-              const SizedBox(height: Sizes.spaceBtwInputFields),
-
-              // Doctor Name
-              presInput(
-                context,
-                _doctor,
-                "Doctor's Name",
-                "Dr. Kunal Karmavat",
+              const StepProgressIndicator(
+                totalSteps: 2,
+                currentStep: 1,
+                size: 8,
+                selectedColor: TColors.primary,
+                unselectedColor: TColors.borderDark,
+                roundedEdges: Radius.circular(4),
               ),
-              const SizedBox(height: Sizes.spaceBtwInputFields),
+              const SizedBox(height: Sizes.spaceBtwSections),
 
-              presInput(
-                context,
-                _currentDate,
-                "Prescription Date",
+              inputField(name, "Patient Name", "Enter patient name"),
+              inputField(
+                age,
+                "Age",
+                "Enter patient age",
+                keyboardType: TextInputType.number,
+              ),
+              inputField(doctor, "Doctor's Name", "Dr. Kunal Karmavat"),
+              inputField(
+                examDate,
+                "Date of Examination",
                 currentDate,
                 isDateField: true,
               ),
-              const SizedBox(height: Sizes.spaceBtwInputFields),
-
-              // Reminder Date
-              presInput(
-                context,
-                _reminder,
+              inputField(
+                reminderDate,
                 "Reminder Date",
                 currentDate,
                 isDateField: true,
               ),
-              const SizedBox(height: Sizes.spaceBtwInputFields),
 
-              // Lens Type Selector
               Text(
-                "Select Lenses Type",
+                "Lens Type",
                 style: GoogleFonts.inter(
                   fontSize: Sizes.fontSizeMd,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: Sizes.spaceBtwItems),
 
-              ValueListenableBuilder<String?>(
-                valueListenable: selectedLens,
-                builder: (context, value, _) {
-                  return Wrap(
-                    spacing: 4,
-                    children: lensTypes.map((type) {
-                      final isSelected = value == type;
-                      return ChoiceChip(
-                        label: Text(
-                          type,
-                          style: GoogleFonts.inter(
-                            color: isSelected ? Colors.white : Colors.black,
-                          ),
-                        ),
-                        selected: isSelected,
-                        onSelected: (bool selected) {
-                          selectedLens.value = selected ? type : null;
-                        },
-                        selectedColor: TColors.primary,
-                        backgroundColor: Colors.white,
-                        side: const BorderSide(color: Colors.black26),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      );
-                    }).toList(),
+              Wrap(
+                spacing: 8,
+                children: lensTypes.map((type) {
+                  final isSelected = selectedLens == type;
+                  return ChoiceChip(
+                    label: Text(
+                      type,
+                      style: TextStyle(
+                        color: isSelected ? Colors.white : Colors.black,
+                      ),
+                    ),
+                    selected: isSelected,
+                    selectedColor: TColors.primary,
+                    backgroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.black26),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(Sizes.borderRadiusMd),
+                    ),
+                    onSelected: (selected) {
+                      setState(() {
+                        selectedLens = selected ? type : null;
+                      });
+                    },
                   );
-                },
+                }).toList(),
               ),
               const SizedBox(height: 80),
             ],
@@ -138,25 +153,17 @@ class PersonalInfo extends StatelessWidget {
         ),
       ),
 
-      // 🧩 Bottom Sheet Button
-      bottomSheet: bottomButton(
-        context,
-        _name,
-        _doctor,
-        _currentDate,
-        _reminder,
-        selectedLens,
-      ),
+      bottomSheet: saveButton(context),
     );
   }
 
   // 🔹 Reusable Input Field
-  Column presInput(
-    BuildContext context,
+  Widget inputField(
     TextEditingController controller,
     String title,
     String hint, {
     bool isDateField = false,
+    TextInputType keyboardType = TextInputType.text,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,11 +179,22 @@ class PersonalInfo extends StatelessWidget {
         TextFormField(
           controller: controller,
           readOnly: isDateField,
+          keyboardType: keyboardType,
+          cursorColor: TColors.primary,
           decoration: InputDecoration(
-            contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-
             hintText: hint,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 12,
+              horizontal: 16,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.grey),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: TColors.primary, width: 1),
+            ),
             suffixIcon: isDateField
                 ? IconButton(
                     icon: const Icon(Icons.calendar_today),
@@ -187,7 +205,6 @@ class PersonalInfo extends StatelessWidget {
                         firstDate: DateTime(2000),
                         lastDate: DateTime(2100),
                       );
-
                       if (pickedDate != null) {
                         controller.text = DateFormat(
                           'dd MMM yyyy',
@@ -198,83 +215,74 @@ class PersonalInfo extends StatelessWidget {
                 : null,
           ),
         ),
+        const SizedBox(height: Sizes.spaceBtwInputFields),
       ],
     );
   }
 
-  // 🔹 Bottom Sheet Button
-  Container bottomButton(
-    BuildContext context,
-    TextEditingController name,
-    TextEditingController doctor,
-    TextEditingController presDate,
-    TextEditingController reminder,
-    ValueNotifier<String?> lens,
-  ) {
+  // 🔹 Save Button
+  Widget saveButton(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.only(left: 20),
+      height: 60,
       width: double.infinity,
-      color: Colors.white,
+      color: Colors.transparent,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          minimumSize: const Size(double.infinity, 50),
           backgroundColor: TColors.primary,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.only(topLeft: Radius.circular(8)),
           ),
         ),
         onPressed: () async {
-          DbProvider provider = context.read<DbProvider>();
+          DbProvider dbProvider = context.read<DbProvider>();
 
-          if (name.text.isEmpty || doctor.text.isEmpty || lens.value == null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text("Please fill all required fields."),
-                backgroundColor: Colors.redAccent,
+          if (name.text.isEmpty ||
+              age.text.isEmpty ||
+              doctor.text.isEmpty ||
+              examDate.text.isEmpty ||
+              reminderDate.text.isEmpty ||
+              selectedLens == null) {
+            showTopSnackBar(
+              Overlay.of(context),
+              const CustomSnackBar.error(message: "Please fill all fields",
+              backgroundColor: TColors.red,
               ),
             );
             return;
           }
 
-          int id = await provider.addOnPrescription(
-            name.text,
-            doctor.text,
-            reminder.text,
-            presDate.text,
-            lens.value ?? ""
+          final personalInfo = PersonalInfoModel(
+            patientName: name.text,
+            age: int.tryParse(age.text) ?? 0,
+            doctorName: doctor.text,
+            examDate: examDate.text,
+            reminderDate: reminderDate.text,
+            lensType: selectedLens ?? '',
           );
-          debugPrint("this is your id ${provider.lastInsertedPrescriptionId}");
-          if (id > 0) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text("Prescription Saved Successfully ✅"),
-                backgroundColor: Colors.green,
+
+          int check = await dbProvider.insertPersonalInfo(personalInfo);
+
+          if (check > 0) {
+            showTopSnackBar(
+              Overlay.of(context),
+              const CustomSnackBar.success(message: " Personal Info Saved ✅",
+              backgroundColor: TColors.primary,
               ),
             );
-
-            // ✅ Pass the generated prescription ID to the LenseInfo screen
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => LenseInfo(),
-              ),
-            );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text("Failed to Save Prescription ❌"),
-                backgroundColor: Colors.redAccent,
+                builder: (context) => const VisionDetailsScreen(),
               ),
             );
           }
         },
-
         child: Text(
-          'Next & Save',
+          'Save',
           style: GoogleFonts.inter(
-            fontSize: Sizes.fontSizeMd,
-            fontWeight: FontWeight.w400,
-            color: TColors.textWhite,
+            color: Colors.white,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ),

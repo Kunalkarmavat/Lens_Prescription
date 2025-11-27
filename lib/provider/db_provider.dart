@@ -3,93 +3,64 @@ import 'package:flutter/foundation.dart';
 
 class DbProvider extends ChangeNotifier {
   final DBHelper dbHelper;
-  DbProvider({required this.dbHelper});
 
-  List<Map<String, dynamic>> _mData = [];
-  List<Map<String, dynamic>> get mData => _mData;
+  List<Map<String, dynamic>> prescriptions = [];
+  List<Map<String, dynamic>> filteredPrescriptions = [];
 
-  int? _lastInsertedPrescriptionId;
-  int? get lastInsertedPrescriptionId => _lastInsertedPrescriptionId;
+  int? _prescriptionId;
+  int? get prescriptionId => _prescriptionId;
 
-  // 🔹 Add new prescription
-  Future<int> addOnPrescription(
-    String name,
-    String presDate,
-    String reminder,
-    String doctor,
-    String lens,
-  ) async {
-    int id = await dbHelper.addPrescription(
-      prescriptionName: name,
-      prescriptionDate: presDate,
-      reminderDate: reminder,
-      doctorName: doctor,
-      lensType: lens,
-    );
-
-    if (id > 0) {
-      _lastInsertedPrescriptionId = id;
-      _mData = await dbHelper.getAllPrescriptions();
-      notifyListeners();
-    }
-
-    return id; // ✅ Return inserted prescription ID
+  DbProvider({required this.dbHelper}) {
+    loadPrescriptions();
   }
 
-  // 🔹 Add lens info
-  Future<int> addLensInfo({
-    required int prescriptionId,
-    required String rightSphere,
-    required String leftSphere,
-    required String rightNearAdd,
-    required String leftNearAdd,
-    required String intermediateAdd,
-    required String rightCylinder,
-    required String leftCylinder,
-    required String rightAxis,
-    required String leftAxis,
-    required String prism,
-    required String pupillaryDistance,
-    required String note,
-  }) async {
-    int id = await dbHelper.addLensInfo(
-      prescriptionId: prescriptionId,
-      rightSphere: rightSphere,
-      leftSphere: leftSphere,
-      rightNearAdd: rightNearAdd,
-      leftNearAdd: leftNearAdd,
-      intermediateAdd: intermediateAdd,
-      rightCylinder: rightCylinder,
-      leftCylinder: leftCylinder,
-      rightAxis: rightAxis,
-      leftAxis: leftAxis,
-      prism: prism,
-      pupillaryDistance: pupillaryDistance,
-      note: note,
-    );
+  /// ✅ Fetch all prescriptions from DB
+  Future<void> loadPrescriptions() async {
+    prescriptions = await dbHelper.getAllPrescriptions();
+    filteredPrescriptions = prescriptions; // show all initially
+    notifyListeners();
+  }
 
+  /// ✅ Search filter
+  void filterPrescriptions(String query) {
+    if (query.isEmpty) {
+      filteredPrescriptions = prescriptions;
+    } else {
+      filteredPrescriptions = prescriptions.where((pres) {
+        final name = pres['patient_name']?.toLowerCase() ?? "";
+        return name.contains(query.toLowerCase());
+      }).toList();
+    }
+    notifyListeners();
+  }
+
+  /// ✅ Insert personal info
+  Future<int> insertPersonalInfo(personalInfo) async {
+    int id = await dbHelper.insertPersonalInfo(personalInfo);
+    _prescriptionId = id;
     notifyListeners();
     return id;
   }
 
-  // 🔹 Get all prescriptions
-  Future<void> getAllPrescription() async {
-    _mData = await dbHelper.getAllPrescriptions();
+   Future<Map<String, dynamic>?> getFullPrescription() async {
+    final data = await dbHelper.getPrescriptionData(_prescriptionId!);
     notifyListeners();
-  }
-
-  // 🔹 Get single prescription (with lens info)
-  Future<Map<String, dynamic>?> getSinglePrescriptionData() async {
-    if (_lastInsertedPrescriptionId == null) return null;
-
-    final data = await dbHelper.getSinglePrescriptionData(_lastInsertedPrescriptionId!);
     return data;
   }
 
-  // 🔹 Delete prescription
-  Future<void> deletePrescription(int id) async {
-    await dbHelper.deletePrescription(id);
-    _mData = await dbHelper.getAllPrescriptions();
+
+  /// ✅ Insert vision details
+  Future<int> insertVisionDetails(visionDetails) async {
+    int id = await dbHelper.insertVisionDetails(
+      visionDetails,
+      _prescriptionId!,
+    );
+
+    
+
+    /// reload list after insert
+    await loadPrescriptions();
     notifyListeners();
+    return id;
   }
 }

@@ -1,228 +1,193 @@
-import 'dart:io';
-import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
+import '../models/personal_info_model.dart';
+import '../models/vision_details_model.dart';
 
 class DBHelper {
+  DBHelper._init();
+  static final DBHelper instance = DBHelper._init();
 
-  DBHelper._();
-  static final getInstance = DBHelper._();
+  static Database? _db;
 
-  // Database name
-  static const String DB_NAME = 'prescriptionDB.db';
+  // ✅ Table Names
+  static const String tablePersonalInfo = 'personal_info';
+  static const String tableVisionDetails = 'vision_details';
 
-  // Prescription Table
-  static const String TABLE_PRESCRIPTION = 'prescription_table';
-  static const String COLUMN_PRES_SNO = 's_no';
-  static const String COLUMN_PRES_NAME = 'prescription_name';
-  static const String COLUMN_PRES_DATE = 'prescription_date';
-  static const String COLUMN_REMINDER_DATE = 'reminder_date';
-  static const String COLUMN_DOCTOR_NAME = 'doctor_name';
-  static const String COLUMN_LENS_TYPE = 'lens_type';
+  // ✅ Personal Info Columns
+  static const String colId = 'id';
+  static const String colPatientName = 'patient_name';
+  static const String colAge = 'age';
+  static const String colDoctorName = 'doctor_name';
+  static const String colExamDate = 'exam_date';
+  static const String colReminderDate = 'reminder_date';
+  static const String colLensType = 'lens_type';
 
-  // Lens Info Table
-  static const String TABLE_LENS_INFO = 'lens_info_table';
-  static const String COLUMN_LENS_ID = 'lens_id';
-  static const String COLUMN_PRES_ID = 'prescription_id';
-  static const String COLUMN_RIGHT_SPHERE = 'right_sphere';
-  static const String COLUMN_LEFT_SPHERE = 'left_sphere';
-  static const String COLUMN_RIGHT_NEAR_ADD = 'right_near_add';
-  static const String COLUMN_LEFT_NEAR_ADD = 'left_near_add';
-  static const String COLUMN_INTERMEDIATE_ADD = 'intermediate_add';
-  static const String COLUMN_RIGHT_CYLINDER = 'right_cylinder';
-  static const String COLUMN_LEFT_CYLINDER = 'left_cylinder';
-  static const String COLUMN_RIGHT_AXIS = 'right_axis';
-  static const String COLUMN_LEFT_AXIS = 'left_axis';
-  static const String COLUMN_PRISM = 'prism';
-  static const String COLUMN_PD = 'pupillary_distance';
-  static const String COLUMN_NOTE = 'note';
+  // ✅ Vision Details Columns
+  static const String colPersonalInfoId = 'personal_info_id';
 
-  Database? _db;
+  static const String colRightSphere = 'right_sphere';
+  static const String colLeftSphere = 'left_sphere';
 
-  // Get DB
-  Future<Database> getDB() async {
-    _db ??= await _openDB();
+  static const String colRightNearAdd = 'right_near_add';
+  static const String colLeftNearAdd = 'left_near_add';
+
+  static const String colIntermediateAdd = 'intermediate_add';
+
+  static const String colRightCylinder = 'right_cylinder';
+  static const String colLeftCylinder = 'left_cylinder';
+
+  static const String colRightAxis = 'right_axis';
+  static const String colLeftAxis = 'left_axis';
+
+  static const String colPrism = 'prism';
+  static const String colRightHorizontalPrism = 'right_horizontal_prism';
+  static const String colLeftHorizontalPrism = 'left_horizontal_prism';
+  static const String colRightVerticalPrism = 'right_vertical_prism';
+  static const String colLeftVerticalPrism = 'left_vertical_prism';
+
+  static const String colPupillaryDistance = 'pupillary_distance';
+  static const String colSinglePD = 'single_pd';
+  static const String colRightDistancePd = 'right_distance_pd';
+  static const String colleftDistancePd = 'left_distance_pd';
+
+  static const String colNote = 'note';
+
+  // ✅ Initialize Database
+  Future<Database> get database async {
+    if (_db != null) return _db!;
+    _db = await _initDB('eye_prescription.db');
     return _db!;
   }
 
-  // Open DB
-  Future<Database> _openDB() async {
-    Directory appDir = await getApplicationDocumentsDirectory();
-    String dbPath = join(appDir.path, DB_NAME);
-
-    return await openDatabase(
-      dbPath,
-      version: 1,
-      onCreate: (db, version) async {
-        // Prescription Table
-        await db.execute('''
-          CREATE TABLE $TABLE_PRESCRIPTION (
-            $COLUMN_PRES_SNO INTEGER PRIMARY KEY AUTOINCREMENT,
-            $COLUMN_PRES_NAME TEXT NOT NULL,
-            $COLUMN_PRES_DATE TEXT NOT NULL,
-            $COLUMN_REMINDER_DATE TEXT,
-            $COLUMN_DOCTOR_NAME TEXT,
-            $COLUMN_LENS_TYPE TEXT
-          )
-        ''');
-
-        // Lens Info Table
-        await db.execute('''
-          CREATE TABLE $TABLE_LENS_INFO (
-            $COLUMN_LENS_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-            $COLUMN_PRES_ID INTEGER,
-            $COLUMN_RIGHT_SPHERE TEXT,
-            $COLUMN_LEFT_SPHERE TEXT,
-            $COLUMN_RIGHT_NEAR_ADD TEXT,
-            $COLUMN_LEFT_NEAR_ADD TEXT,
-            $COLUMN_INTERMEDIATE_ADD TEXT,
-            $COLUMN_RIGHT_CYLINDER TEXT,
-            $COLUMN_LEFT_CYLINDER TEXT,
-            $COLUMN_RIGHT_AXIS TEXT,
-            $COLUMN_LEFT_AXIS TEXT,
-            $COLUMN_PRISM TEXT,
-            $COLUMN_PD TEXT,
-            $COLUMN_NOTE TEXT,
-            FOREIGN KEY ($COLUMN_PRES_ID) REFERENCES $TABLE_PRESCRIPTION ($COLUMN_PRES_SNO) ON DELETE CASCADE
-          )
-        ''');
-      },
-    );
+  Future<Database> _initDB(String fileName) async {
+    final dbPath = await getDatabasesPath();
+    final path = join(dbPath, fileName);
+    return await openDatabase(path, version: 1, onCreate: _createDB);
   }
 
-  // void Search( String SearchText)async {
-  //   print("Searching for $SearchText");
-  //   final db = await getDB();
-  //   List<Map<String, dynamic>> results = await db.query(
-  //     TABLE_PRESCRIPTION,
-  //     where: '$COLUMN_PRES_NAME LIKE ?',
-  //     whereArgs: ['%$SearchText%'],
-  //   );
-  // }
+  Future<void> _createDB(Database db, int version) async {
+    await db.execute('''
+    CREATE TABLE $tablePersonalInfo (
+      $colId INTEGER PRIMARY KEY AUTOINCREMENT,
+      $colPatientName TEXT,
+      $colAge INTEGER,
+      $colDoctorName TEXT,
+      $colExamDate TEXT,
+      $colReminderDate TEXT,
+      $colLensType TEXT
+    )
+  ''');
 
-  // Insert Prescription
-Future<int> addPrescription({
-  required String prescriptionName,
-  required String prescriptionDate,
-  required String reminderDate,
-  required String doctorName,
-  required String lensType,
-}) async {
-  final db = await getDB();
-  int id = await db.insert(TABLE_PRESCRIPTION, {
-    COLUMN_PRES_NAME: prescriptionName,
-    COLUMN_PRES_DATE: prescriptionDate,
-    COLUMN_REMINDER_DATE: reminderDate,
-    COLUMN_DOCTOR_NAME: doctorName,
-    COLUMN_LENS_TYPE: lensType,
-  });
-  
-  return id; // 👈 return the new record ID
-}
+    await db.execute('''
+  CREATE TABLE $tableVisionDetails (
 
+    $colId INTEGER PRIMARY KEY AUTOINCREMENT,
 
-  // Insert Lens Info
-// Insert Lens Info
-Future<int> addLensInfo({
-  required int prescriptionId,
-  required String rightSphere,
-  required String leftSphere,
-  required String rightNearAdd,
-  required String leftNearAdd,
-  required String intermediateAdd,
-  required String rightCylinder,
-  required String leftCylinder,
-  required String rightAxis,
-  required String leftAxis,
-  required String prism,
-  required String pupillaryDistance,
-  required String note,
-}) async {
-  final db = await getDB();
-  int id = await db.insert(TABLE_LENS_INFO, {
-    COLUMN_PRES_ID: prescriptionId,
-    COLUMN_RIGHT_SPHERE: rightSphere,
-    COLUMN_LEFT_SPHERE: leftSphere,
-    COLUMN_RIGHT_NEAR_ADD: rightNearAdd,
-    COLUMN_LEFT_NEAR_ADD: leftNearAdd,
-    COLUMN_INTERMEDIATE_ADD: intermediateAdd,
-    COLUMN_RIGHT_CYLINDER: rightCylinder,
-    COLUMN_LEFT_CYLINDER: leftCylinder,
-    COLUMN_RIGHT_AXIS: rightAxis,
-    COLUMN_LEFT_AXIS: leftAxis,
-    COLUMN_PRISM: prism,
-    COLUMN_PD: pupillaryDistance,
-    COLUMN_NOTE: note,
-  });
+    $colPersonalInfoId INTEGER,
 
-  return id; // 👈 Return the inserted row ID
-}
+    $colRightSphere REAL,
+    $colLeftSphere REAL,
+    $colRightNearAdd REAL,
+    $colLeftNearAdd REAL,
 
+    $colIntermediateAdd INTEGER,
 
-  // Get all prescriptions
+    $colRightCylinder REAL,
+    $colLeftCylinder REAL,
+    $colRightAxis INTEGER,
+    $colLeftAxis INTEGER,
+
+    $colPrism INTEGER,
+
+    $colRightHorizontalPrism TEXT,
+    $colLeftHorizontalPrism TEXT,
+    $colRightVerticalPrism TEXT,
+    $colLeftVerticalPrism TEXT,
+
+    $colPupillaryDistance INTEGER,
+
+    $colSinglePD INTEGER,
+    $colRightDistancePd REAL,
+    $colleftDistancePd REAL,
+    $colNote TEXT,
+    
+    FOREIGN KEY ($colPersonalInfoId) REFERENCES $tablePersonalInfo($colId)
+
+  )
+''');
+  }
+
+  // ✅ Insert Personal Info
+  Future<int> insertPersonalInfo(PersonalInfoModel info) async {
+    final db = await database;
+    return await db.insert(tablePersonalInfo, info.toMap());
+  }
+
+  // ✅ Insert Vision Details
+  Future<int> insertVisionDetails(
+    VisionDetails details,
+    int personalInfoId,
+  ) async {
+    final db = await database;
+    final data = details.toMap();
+    data[colPersonalInfoId] = personalInfoId;
+    return await db.insert(tableVisionDetails, data);
+  }
+
+  // ✅ Get Joined Prescription Data
+  Future<Map<String, dynamic>?> getPrescriptionData(int personalInfoId) async {
+    final db = await database;
+
+    final result = await db.rawQuery(
+      '''
+      SELECT p.*, v.*
+      FROM $tablePersonalInfo p
+      LEFT JOIN $tableVisionDetails v
+      ON p.$colId = v.$colPersonalInfoId
+      WHERE p.$colId = ?
+    ''',
+      [personalInfoId],
+    );
+
+    return result.isNotEmpty ? result.first : null;
+  }
+
   Future<List<Map<String, dynamic>>> getAllPrescriptions() async {
-    final db = await getDB();
-    return await db.query(TABLE_PRESCRIPTION);
+    final db = await database;
+
+    final result = await db.rawQuery('''
+    SELECT p.*, v.*
+    FROM $tablePersonalInfo p
+    LEFT JOIN $tableVisionDetails v
+    ON p.$colId = v.$colPersonalInfoId
+    ORDER BY p.$colId DESC
+  ''');
+
+    return result;
   }
 
-  // Get lens info by prescription id
-  Future<List<Map<String, dynamic>>> getLensInfoByPrescription(int id) async {
-    final db = await getDB();
-    return await db.query(
-      TABLE_LENS_INFO,
-      where: '$COLUMN_PRES_ID = ?',
-      whereArgs: [id],
+  // ✅ Delete prescription (delete from both tables)
+  Future<int> deletePrescription(int personalInfoId) async {
+    final db = await database;
+
+    // Delete from vision_details first
+    await db.delete(
+      tableVisionDetails,
+      where: '$colPersonalInfoId = ?',
+      whereArgs: [personalInfoId],
+    );
+
+    // Delete from personal_info
+    return await db.delete(
+      tablePersonalInfo,
+      where: '$colId = ?',
+      whereArgs: [personalInfoId],
     );
   }
 
-  // Delete prescription (cascade deletes lens info)
-  Future<bool> deletePrescription(int sno) async {
-    final db = await getDB();
-    int result = await db.delete(
-      TABLE_PRESCRIPTION,
-      where: '$COLUMN_PRES_SNO = ?',
-      whereArgs: [sno],
-    );
-    return result > 0;
-  }
-
-  // Close DB
-  Future<void> closeDB() async {
-    final db = await getDB();
+  // ✅ Close Database
+  Future<void> close() async {
+    final db = await database;
     await db.close();
   }
-
-
-  Future<Map<String, dynamic>?> getSinglePrescriptionData(int prescriptionId) async {
-  final db = await getDB();
-  final result = await db.rawQuery('''
-    SELECT 
-      p.$COLUMN_PRES_SNO AS id,
-      p.$COLUMN_PRES_NAME AS name,
-      p.$COLUMN_PRES_DATE AS date,
-      p.$COLUMN_DOCTOR_NAME AS doctor,
-      p.$COLUMN_LENS_TYPE AS lensType,
-      l.$COLUMN_RIGHT_SPHERE AS rightSphere,
-      l.$COLUMN_LEFT_SPHERE AS leftSphere,
-      l.$COLUMN_RIGHT_CYLINDER AS rightCylinder,
-      l.$COLUMN_LEFT_CYLINDER AS leftCylinder,
-      l.$COLUMN_RIGHT_AXIS AS rightAxis,
-      l.$COLUMN_LEFT_AXIS AS leftAxis,
-      l.$COLUMN_PRISM AS prism,
-      l.$COLUMN_PD AS pupillaryDistance,
-      l.$COLUMN_NOTE AS note
-    FROM $TABLE_PRESCRIPTION p
-    INNER JOIN $TABLE_LENS_INFO l 
-    ON p.$COLUMN_PRES_SNO = l.$COLUMN_PRES_ID
-    WHERE p.$COLUMN_PRES_SNO = ?
-  ''', [prescriptionId]);
-
-  // Return first row if found, else null
-  if (result.isNotEmpty) {
-    return result.first;
-  } else {
-    return null;
-  }
-}
-
 }

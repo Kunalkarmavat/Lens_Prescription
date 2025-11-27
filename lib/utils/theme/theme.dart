@@ -1,5 +1,4 @@
 import 'package:eye_prescription/utils/theme/custom_themes/appbar_theme.dart' as appBarTheme;
-import 'package:eye_prescription/utils/theme/custom_themes/bottom_sheet_theme.dart';
 import 'package:eye_prescription/utils/theme/custom_themes/checkbox_theme.dart' as checkBoxTheme;
 import 'package:eye_prescription/utils/theme/custom_themes/elevated_button_theme.dart' as elevatedButtonTheme;
 import 'package:eye_prescription/utils/theme/custom_themes/text_field_theme.dart' as textFieldTheme;

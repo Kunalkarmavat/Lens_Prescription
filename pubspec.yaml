@@ -27,6 +27,10 @@ dependencies:
   intl: ^0.20.2
   google_fonts: ^6.3.2
   flutter_picker_plus: ^1.5.4
+  step_progress: ^2.7.0
+  step_progress_indicator: ^1.0.2
+  top_snackbar_flutter: ^3.3.0
+  bottom_picker: ^4.1.1
 
 
 
